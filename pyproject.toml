@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "facebook-content-publisher"
+version = "0.1.0"
+description = "Windows desktop application for localized Facebook Page publishing"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic>=1.14,<2",
+  "platformdirs>=4.3,<5",
+  "pydantic>=2.10,<3",
+  "PySide6>=6.8,<7",
+  "SQLAlchemy>=2.0,<3",
+  "tzdata>=2025.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-qt>=4.4,<5",
+  "pyinstaller>=6.11,<7",
+  "ruff>=0.9,<1",
+]
+
+[project.scripts]
+facebook-content-publisher = "facebook_content_publisher.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/facebook_content_publisher"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
