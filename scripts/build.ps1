@@ -19,6 +19,9 @@ try {
         --name FacebookContentPublisher `
         --paths src `
         --hidden-import logging.config `
+        --collect-all openai `
+        --collect-all keyring `
+        --collect-all certifi `
         --add-data "alembic.ini;." `
         --add-data "migrations;migrations" `
         src\facebook_content_publisher\main.py

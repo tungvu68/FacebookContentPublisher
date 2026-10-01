@@ -29,4 +29,5 @@ class MockTranslationProvider:
             },
             usage=TokenUsage(input_tokens=len(prompt.split()), output_tokens=len(body.split())),
             request_id=f"mock-{prompt_version}",
+            model_name="mock-localizer-v1",
         )

@@ -97,6 +97,14 @@ class LocalizedContent:
     input_tokens: int | None = None
     output_tokens: int | None = None
     cached_input_tokens: int | None = None
+    provider_request_id: str | None = None
+    translation_started_at: datetime | None = None
+    translation_completed_at: datetime | None = None
+    failure_code: str | None = None
+    failure_message: str | None = None
+    source_text_hash: str = ""
+    manually_edited: bool = False
+    rejected_at: datetime | None = None
     approved_at: datetime | None = None
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
@@ -119,6 +127,27 @@ class Publication:
     attempt_count: int = 0
     last_error_code: str | None = None
     last_error_message: str | None = None
+    started_at_utc: datetime | None = None
+    completed_at_utc: datetime | None = None
+    next_retry_at_utc: datetime | None = None
+    lease_owner: str | None = None
+    lease_expires_at_utc: datetime | None = None
+    heartbeat_at_utc: datetime | None = None
+    max_attempts: int = 5
+    provider_request_id: str | None = None
+    cancelled_at_utc: datetime | None = None
+    correlation_id: str = ""
+    post_text_snapshot: str = ""
+    country_code_snapshot: str = ""
+    language_code_snapshot: str = ""
+    comment_text_snapshot: str = ""
+    link_url_snapshot: str | None = None
+    media_snapshot_json: str = "[]"
+    delayed_comment_enabled: bool = True
+    comment_delay_minutes: int = 330
+    version: int = 1
+    provider_mode_snapshot: str = "mock"
+    attention_required: bool = False
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
 
@@ -137,6 +166,20 @@ class CommentJob:
     next_retry_at_utc: datetime | None = None
     last_error_code: str | None = None
     last_error_message: str | None = None
+    started_at_utc: datetime | None = None
+    completed_at_utc: datetime | None = None
+    lease_owner: str | None = None
+    lease_expires_at_utc: datetime | None = None
+    heartbeat_at_utc: datetime | None = None
+    max_attempts: int = 5
+    provider_request_id: str | None = None
+    cancelled_at_utc: datetime | None = None
+    page_id_snapshot: str = ""
+    facebook_post_id_snapshot: str = ""
+    correlation_id: str = ""
+    version: int = 1
+    provider_mode_snapshot: str = "mock"
+    attention_required: bool = False
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
 
@@ -149,4 +192,7 @@ class ActivityLog:
     id: UUID = field(default_factory=uuid4)
     entity_type: str | None = None
     entity_id: UUID | None = None
+    correlation_id: str = ""
+    actor: str = "system"
+    metadata_json: str = "{}"
     created_at: datetime = field(default_factory=utc_now)

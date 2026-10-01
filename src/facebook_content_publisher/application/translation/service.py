@@ -56,4 +56,10 @@ class TranslationService:
             raise TranslationValidationError(
                 f"provider locale {output.language_code!r} does not match {country.language_code!r}"
             )
-        return TranslationResult(output, response.usage, self._builder.version, response.request_id)
+        return TranslationResult(
+            output,
+            response.usage,
+            self._builder.version,
+            response.request_id,
+            response.model_name,
+        )

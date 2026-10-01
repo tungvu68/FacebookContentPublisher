@@ -125,6 +125,9 @@ class MediaAssetRecord(Base):
 
 class LocalizedContentRecord(TimestampMixin, Base):
     __tablename__ = "localized_contents"
+    __table_args__ = (
+        UniqueConstraint("campaign_id", "country_profile_id", name="uq_localized_campaign_country"),
+    )
 
     id: Mapped[UUID] = mapped_column(UUIDText(), primary_key=True)
     campaign_id: Mapped[UUID] = mapped_column(
@@ -145,6 +148,14 @@ class LocalizedContentRecord(TimestampMixin, Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     cached_input_tokens: Mapped[int | None] = mapped_column(Integer)
+    provider_request_id: Mapped[str | None] = mapped_column(String(100))
+    translation_started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    translation_completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    failure_code: Mapped[str | None] = mapped_column(String(100))
+    failure_message: Mapped[str | None] = mapped_column(Text)
+    source_text_hash: Mapped[str] = mapped_column(String(64), default="")
+    manually_edited: Mapped[bool] = mapped_column(Boolean, default=False)
+    rejected_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     approved_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
 
@@ -170,6 +181,27 @@ class PublicationRecord(TimestampMixin, Base):
     last_error_code: Mapped[str | None] = mapped_column(String(100))
     last_error_message: Mapped[str | None] = mapped_column(Text)
     idempotency_key: Mapped[str] = mapped_column(String(200), unique=True)
+    started_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_retry_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    lease_owner: Mapped[str | None] = mapped_column(String(100))
+    lease_expires_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    heartbeat_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    max_attempts: Mapped[int] = mapped_column(Integer, default=5)
+    provider_request_id: Mapped[str | None] = mapped_column(String(100))
+    cancelled_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    correlation_id: Mapped[str] = mapped_column(String(100), default="")
+    post_text_snapshot: Mapped[str] = mapped_column(Text, default="")
+    country_code_snapshot: Mapped[str] = mapped_column(String(10), default="")
+    language_code_snapshot: Mapped[str] = mapped_column(String(20), default="")
+    comment_text_snapshot: Mapped[str] = mapped_column(Text, default="")
+    link_url_snapshot: Mapped[str | None] = mapped_column(Text)
+    media_snapshot_json: Mapped[str] = mapped_column(Text, default="[]")
+    delayed_comment_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    comment_delay_minutes: Mapped[int] = mapped_column(Integer, default=330)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    provider_mode_snapshot: Mapped[str] = mapped_column(String(20), default="mock")
+    attention_required: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class CommentJobRecord(TimestampMixin, Base):
@@ -189,6 +221,20 @@ class CommentJobRecord(TimestampMixin, Base):
     last_error_code: Mapped[str | None] = mapped_column(String(100))
     last_error_message: Mapped[str | None] = mapped_column(Text)
     idempotency_key: Mapped[str] = mapped_column(String(200), unique=True)
+    started_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    lease_owner: Mapped[str | None] = mapped_column(String(100))
+    lease_expires_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    heartbeat_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    max_attempts: Mapped[int] = mapped_column(Integer, default=5)
+    provider_request_id: Mapped[str | None] = mapped_column(String(100))
+    cancelled_at_utc: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    page_id_snapshot: Mapped[str] = mapped_column(String(100), default="")
+    facebook_post_id_snapshot: Mapped[str] = mapped_column(String(100), default="")
+    correlation_id: Mapped[str] = mapped_column(String(100), default="")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    provider_mode_snapshot: Mapped[str] = mapped_column(String(20), default="mock")
+    attention_required: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class ActivityLogRecord(Base):
@@ -201,3 +247,25 @@ class ActivityLogRecord(Base):
     entity_id: Mapped[UUID | None] = mapped_column(UUIDText())
     safe_message: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    correlation_id: Mapped[str] = mapped_column(String(100), default="", index=True)
+    actor: Mapped[str] = mapped_column(String(20), default="system")
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class FacebookPageConnectionRecord(TimestampMixin, Base):
+    __tablename__ = "facebook_page_connections"
+
+    id: Mapped[UUID] = mapped_column(UUIDText(), primary_key=True)
+    page_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    page_name: Mapped[str] = mapped_column(String(200))
+    credential_alias: Mapped[str] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(30), default="CONNECTED")
+    permissions_json: Mapped[str] = mapped_column(Text, default="[]")
+    can_publish: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_comment: Mapped[bool] = mapped_column(Boolean, default=False)
+    connected_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    last_validated_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    token_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_error_code: Mapped[str | None] = mapped_column(String(100))
+    last_error_message: Mapped[str | None] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, default=1)

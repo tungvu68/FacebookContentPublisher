@@ -1,9 +1,61 @@
 # Facebook Content Publisher
 
+## Milestone 5 — persistent mock scheduler
+
+Approved translations can now be converted into immediate or scheduled publication jobs.
+SQLite is the source of truth; the background worker uses transactional claims, expiring
+leases, persisted exponential retry times and idempotency keys. Successful mock publications
+create at most one delayed comment job, calculated from the actual publish timestamp.
+
+The Scheduled Jobs page supports search, status filters, run/retry/cancel and guarded manual
+completion for ambiguous results. `UNKNOWN_RESULT` is never retried automatically. The tray
+menu can open the app, pause/resume the scheduler, wake due jobs, or exit. All Facebook IDs and
+URLs are visibly fake and no Facebook credential or network request is used.
+
+Start the app with `scripts\run.ps1`; run all offline checks with `scripts\test.ps1`; build the
+Windows onedir package with `scripts\build.ps1`.
+
+## Milestone 6 — desktop and scheduler hardening
+
+- Publication and comment execution use separate bounded worker pools. Transactional claims,
+  owner-scoped leases, periodic heartbeats and a scan lock prevent duplicate execution.
+- Job Details shows detached snapshots and activity history. Safe diagnostics exclude post,
+  comment, media and raw metadata content. Reschedule uses optimistic versions and rejects races.
+- Scheduler settings validate concurrency, polling, lease/heartbeat, shutdown, retry, overdue,
+  notification and tray options. Worker-count changes apply after application restart.
+- Start with Windows uses the current-user Windows Run key only in a packaged build, is off by
+  default, and never requests administrator rights. Turning it off removes only the
+  `FacebookContentPublisher` value; uninstallers should call the same disable operation.
+- Jobs older than the configured grace period are held for operator attention when confirmation
+  is enabled. They can then be run, rescheduled or cancelled from Scheduled Jobs.
+- Facebook provider selection fails closed in `graph_api` mode with
+  `Facebook production connection is not configured`. Milestone 6 never contacts Meta.
+- The Dashboard, Scheduled Jobs and Logs views use SQLite-backed metrics and audit events.
+
+Milestone 7 will need the Meta application configuration, Page authorization workflow and real
+Graph API adapter. Do not place tokens or App Secrets in repository files.
+
+## Milestone 7A — offline Facebook production integration
+
+The project now contains a typed, injectable Graph HTTP client; structured error mapping;
+keyring-backed per-Page credential aliases; an OAuth broker boundary; Page connection metadata;
+and `GraphApiFacebookPublisher` adapters for text, photo, video and comments. All default tests use
+`httpx.MockTransport`, and production publishing is disabled by default.
+
+Mock and production jobs are selected by their immutable `provider_mode_snapshot`. Missing Page
+credentials, a disabled production safety switch, or absent broker configuration fail closed and
+never fall back to the mock publisher. The Facebook Pages screen offers an offline mock connection;
+live Connect remains disabled until Phase 7B configuration is verified.
+
+See `docs/META_SETUP.md`, `docs/META_OAUTH_THREAT_MODEL.md`, and
+`docs/META_APP_REVIEW.md`. The official Meta pages were unreachable from the documentation-check
+environment on 2026-10-01, so `v24.0`, candidate permissions, endpoints, and especially the video
+upload flow must be re-verified against current Meta documentation before any live test.
+
 Windows desktop application for preparing localized Facebook Page content. Milestones
-1–3 provide the PySide6 shell, domain/SQLite foundation, Country management, Campaign
-drafts, multi-country targets, and media selection. OpenAI and Facebook remain in clearly
-labelled **mock mode**; no key, token, or other secret is required.
+1–4 include Country/Campaign management, concurrent structured translation, OpenAI
+Responses API support, secure credential storage, and translation review. The safe default
+is **mock mode**, which needs no key, token, or network access.
 
 ## Setup
 
@@ -32,7 +84,8 @@ startup. Manual commands are also available:
 SQLite normally lives under the platform application-data directory at
 `FacebookContentPublisher\data\app.db`. Set `FCP_DATA_DIR` or pass
 `--database C:\path\to\app.db` for an isolated development database. Alembic revision
-`0002` adds `campaign_targets`, including the unique Campaign/Country constraint.
+`0004` is the current head and adds translation lifecycle, recovery, source-hash, request ID,
+failure and manual-review metadata. Earlier revisions remain unchanged.
 
 The development seed contains Thailand, Indonesia, and Brazil and is idempotent.
 
@@ -49,8 +102,23 @@ Campaigns page supports search, status filter, edit/view, duplicate, archive, an
 deletion. Selected source files are referenced only; the application never modifies or
 deletes original media.
 
-`Generate Translations` validates and saves the draft, then explicitly reports that the
-translation engine belongs to Milestone 4—it makes no OpenAI request.
+`Generate Translations` validates and saves the draft, translates targets concurrently,
+persists each result immediately, and opens Translation Review. Review supports editing,
+approval, rejection, retry and regeneration. Mock mode remains fully offline.
+
+## Configure OpenAI
+
+Open **Settings → OpenAI**, select `openai`, choose a model, timeout, concurrency and retry
+limits, then enter the API key with **Set / Replace Key**. The key is saved only through
+Windows Credential Manager under `FacebookContentPublisher/v1`; it is never written to
+SQLite, settings JSON, logs, source, or repopulated into the key field. Use **Test
+Connection** to make a minimal structured Responses API request. Switching modes never
+initiates a request.
+
+The adapter uses `client.responses.parse(...)` with the strict Pydantic
+`TranslationOutput`, disables response storage, tools, streaming and conversation history,
+and validates the locale again after parsing. Provider tests use fake SDK clients; no live
+test runs by default.
 
 ## Test and build
 
@@ -74,8 +142,8 @@ Media SHA-256 uses chunked reads, and the UI validates selected files on a threa
 worker. `.env`, databases, caches, environments, logs, and builds are ignored by Git.
 `.env.example` contains modes only and no credentials.
 
-Production OpenAI/Facebook adapters, translation review, credential storage, scheduling,
-publishing, and background jobs are deliberately outside Milestone 3.
+Facebook production, publishing, comments, scheduling and background jobs remain outside
+Milestone 4.
 
 ## Dynamic translation prompt
 
@@ -93,11 +161,19 @@ content are rejected.
 
 Structured translation results carry input, output, and cached-input token counts when a
 provider supplies them. The database fields `input_tokens`, `output_tokens`, and
-`cached_input_tokens` prepare usage display/reporting for the full Milestone 4 workflow.
+`cached_input_tokens` are displayed in Translation Review when supplied by the provider.
 Credential-like values are redacted from rendered dynamic prompt content.
+
+## Packaging
+
+`build\` is an intermediate PyInstaller directory and must not be executed. The supported
+packaged application is only:
+
+```text
+dist\FacebookContentPublisher\FacebookContentPublisher.exe
+```
 
 ## Next milestone
 
-Milestone 4 will add the translation service interface, offline mock translator, official
-OpenAI Responses API adapter, structured-output validation, review/edit/approval UI,
-secret storage, and translation tests.
+Milestone 5 will add persistent publication/comment scheduling, retry/recovery workers,
+system tray integration and background-job status. It will not change credential handling.

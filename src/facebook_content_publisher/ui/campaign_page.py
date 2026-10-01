@@ -40,6 +40,8 @@ from facebook_content_publisher.ui.media_widget import MediaWidget
 
 class CampaignPage(QWidget):
     saved = Signal()
+    generate_requested = Signal(object)
+    cancel_requested = Signal()
 
     def __init__(self, countries: CountryService, campaigns: CampaignService, parent=None) -> None:
         super().__init__(parent)
@@ -103,14 +105,17 @@ class CampaignPage(QWidget):
         save = QPushButton("Save Draft")
         reset = QPushButton("Reset Form")
         generate = QPushButton("Generate Translations")
+        cancel = QPushButton("Cancel Translations")
         self.save_button = save
         self.generate_button = generate
         save.clicked.connect(lambda: self._save(False, save))
         generate.clicked.connect(lambda: self._save(True, generate))
+        cancel.clicked.connect(self.cancel_requested.emit)
         reset.clicked.connect(self.reset)
         actions = QHBoxLayout()
         actions.addWidget(save)
         actions.addWidget(generate)
+        actions.addWidget(cancel)
         actions.addWidget(reset)
         actions.addStretch()
 
@@ -218,11 +223,13 @@ class CampaignPage(QWidget):
             details = self._campaigns_service.save_draft(data, self._editing_id)
             self._editing_id = details.campaign.id
             self.notice.setText(
-                "Draft saved. Translation engine will be implemented in Milestone 4."
+                "Draft saved. Translation started in background."
                 if generate
                 else "Draft saved successfully."
             )
             self.saved.emit()
+            if generate:
+                self.generate_requested.emit(details.campaign.id)
         except (ValidationError, ValueError) as error:
             QMessageBox.warning(self, "Invalid campaign", str(error))
         except Exception as error:

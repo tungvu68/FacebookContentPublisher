@@ -71,6 +71,11 @@ class PromptBuilder:
     version = PROMPT_VERSION
     base_instructions = BASE_INSTRUCTIONS
 
+    def __init__(self, global_prompt: str = "") -> None:
+        if global_prompt and _UNSAFE_OVERRIDE.search(global_prompt):
+            raise ValueError("global prompt cannot change language or base safety rules")
+        self.global_prompt = global_prompt.strip()
+
     def render(self, context: PromptContext) -> str:
         target = (
             "TARGET:\n"
@@ -85,7 +90,10 @@ class PromptBuilder:
             comment_lines.append(f"link: {_safe(context.link_url)}")
         if context.default_hashtags:
             comment_lines.append(f"default_hashtags: {_safe(context.default_hashtags)}")
-        sections = [self.base_instructions, target, "\n".join(comment_lines)]
+        sections = [self.base_instructions]
+        if self.global_prompt:
+            sections.append(f"GLOBAL_GUIDANCE:\n{_safe(self.global_prompt)}")
+        sections.extend([target, "\n".join(comment_lines)])
         if context.country_prompt_override:
             sections.append(f"COUNTRY_OVERRIDE:\n{_safe(context.country_prompt_override)}")
         sections.append(f"SOURCE:\n{_safe(context.source_text)}")

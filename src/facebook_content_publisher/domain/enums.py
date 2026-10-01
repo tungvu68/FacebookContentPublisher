@@ -28,6 +28,7 @@ class TranslationStatus(StrEnum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class PublishMode(StrEnum):
@@ -38,6 +39,7 @@ class PublishMode(StrEnum):
 class PublicationStatus(StrEnum):
     DRAFT = "DRAFT"
     SCHEDULED = "SCHEDULED"
+    READY = "READY"
     RUNNING = "RUNNING"
     PUBLISHED = "PUBLISHED"
     RETRY_WAIT = "RETRY_WAIT"

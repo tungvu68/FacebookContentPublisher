@@ -29,12 +29,13 @@ def create_database(path: Path | None = None) -> Database:
 
     database_path = (path or default_database_path()).resolve()
     database_path.parent.mkdir(parents=True, exist_ok=True)
-    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}", connect_args={"timeout": 5})
 
     @event.listens_for(engine, "connect")
     def enable_foreign_keys(dbapi_connection: object, connection_record: object) -> None:
         cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA busy_timeout=5000")
         cursor.close()
 
     return Database(database_path, engine, sessionmaker(engine, expire_on_commit=False))

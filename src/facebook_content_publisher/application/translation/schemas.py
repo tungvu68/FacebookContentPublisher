@@ -27,6 +27,7 @@ class ProviderResponse:
     output: dict[str, object]
     usage: TokenUsage = TokenUsage()
     request_id: str | None = None
+    model_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,3 +36,4 @@ class TranslationResult:
     usage: TokenUsage
     prompt_version: str
     request_id: str | None = None
+    model_name: str | None = None
